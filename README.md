@@ -1,5 +1,6 @@
 # Project 5
-Needleman Wunsch Algorithm
+Needleman Wunsch Algorithm 
+![](https://github.com/KCore1/HW5-NW/workflows/Project%20Tests/badge.svg)
 
 
 # Assignment Overview
