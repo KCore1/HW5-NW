@@ -20,24 +20,36 @@ def test_nw_alignment():
 
     assert alignment[1] == "MYQR"
     assert alignment[2] == "M-QR"
-    assert aligner._align_matrix == [
-        [0, -np.inf, -np.inf, -np.inf, -np.inf],
-        [-np.inf, 5, -12, -12, -14],
-        [-np.inf, -11, 4, 0, -5],
-        [-np.inf, -13, -7, 5, 5],
-    ]
-    assert aligner._gapA_matrix == [
-        [-10, -np.inf, -np.inf, -np.inf, -np.inf],
-        [-11, -np.inf, -np.inf, -np.inf, -np.inf],
-        [-12, -5, -22, -22, -24],
-        [-13, -6, -6, -10, -15],
-    ]
-    assert aligner._gapB_matrix == [
-        [-10, -11, -12, -13, -14],
-        [-np.inf, -np.inf, -5, -6, -7],
-        [-np.inf, -np.inf, -21, -6, -10],
-        [-np.inf, -np.inf, -23, -17, -5],
-    ]
+    assert np.all(
+        aligner._align_matrix
+        == [
+            [0, -np.inf, -np.inf, -np.inf],
+            [-np.inf, 5, -6, -7],
+            [-np.inf, -6, 4, -7],
+            [-np.inf, -7, -1, 5],
+            [-np.inf, -8, -6, 4],
+        ]
+    )
+    assert np.all(
+        aligner._gapA_matrix
+        == [
+            [-10, -np.inf, -np.inf, -np.inf],
+            [-11, -12, -6, -7],
+            [-12, -13, -14, -7],
+            [-13, -14, -15, -12],
+            [-14, -15, -16, -17],
+        ]
+    )
+    assert np.all(
+        aligner._gapB_matrix
+        == [
+            [-10, -11, -12, -13],
+            [-np.inf, -12, -13, -14],
+            [-np.inf, -6, -14, -15],
+            [-np.inf, -7, -7, -16],
+            [-np.inf, -8, -8, -6],
+        ]
+    )
 
 
 def test_nw_backtrace():
