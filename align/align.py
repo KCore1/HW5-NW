@@ -137,58 +137,86 @@ class NeedlemanWunsch:
         self._seqB = seqB
 
         # Initialize matrix private attributes for use in alignment
-        m, n = len(seqA), len(seqB)
+        m, n = len(seqA), len(
+            seqB
+        )  # Seq A along rows (vertical), Seq B along columns (horizontal)
         self._align_matrix = np.zeros(
             (m + 1, n + 1)
         )  # All should be size (m + 1, n + 1) to include gaps in 0th row and column
-        self._back = np.zeros((m + 1, n + 1))  # For main alignment backtrace
+        self._align_matrix[0, 1:] = [-np.inf] * n  # Initialize proper scoring
+        self._align_matrix[1:, 0] = [-np.inf] * m
+        self._back = np.zeros((m + 1, n + 1), dtype=int)  # For main alignment backtrace
 
         # Initialize specific gap matrices (Ix and Iy) in the video
         self._gapA_matrix = np.full(
             (m + 1, n + 1), -np.inf
         )  # Initialize to negative infinity
-        self._gapA_matrix[0, 0] = self.gap_open 
         self._gapB_matrix = np.full(
             (m + 1, n + 1), -np.inf
         )  # Initialize to negative infinity
-        self._gapB_matrix[0, 0] = self.gap_open
 
-        self._back_A = np.zeros((m + 1, n + 1))  # For Ix backtrace (tracking gaps in A)
-        self._back_B = np.zeros((m + 1, n + 1))  # For Iy backtrace (tracking gaps in B)
+        self._back_A = np.zeros(
+            (m + 1, n + 1), dtype=int
+        )  # For Ix backtrace (tracking gaps in A)
+        self._back_B = np.zeros(
+            (m + 1, n + 1), dtype=int
+        )  # For Iy backtrace (tracking gaps in B)
 
         # Initialize first row and column
-        for i in range(1, m+1):
+        for i in range(0, m + 1):
             self._gapA_matrix[i, 0] = self.gap_open + i * self.gap_extend
             self._back_A[i, 0] = 2  # Upward for gapA
-        for j in range(1, n+1):
+        for j in range(0, n + 1):
             self._gapB_matrix[0, j] = self.gap_open + j * self.gap_extend
             self._back_B[0, j] = 1  # Leftward for gapB
 
+        print(self._gapA_matrix)
+        print(self._gapB_matrix)
+
         # Fill matrices
-        for i in range(1, m+1):
-            for j in range(1, n+1):
-                match_score = self.sub_dict[(seqA[i-1], seqB[j-1])]
-                
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                match_score = self.sub_dict[(seqA[i - 1], seqB[j - 1])]
+
                 # Diagonal move for match/mismatch
-                diagonal_score = self._align_matrix[i-1, j-1] + match_score
-                
-                # Handling gaps in A (seqB gap extension or opening)
-                left_score_A = self._gapA_matrix[i, j-1] + self.gap_extend
-                left_score_align = self._align_matrix[i, j-1] + self.gap_open + self.gap_extend
+                previous_match_max = max(
+                    self._align_matrix[i - 1, j - 1],
+                    self._gapA_matrix[i - 1, j - 1],
+                    self._gapB_matrix[i - 1, j - 1],
+                )
+                self._align_matrix[i, j] = (
+                    previous_match_max + match_score
+                )  # Match score
+
+                # Handling gaps in A (seqA gap extension or opening)
+                left_score_A = (
+                    self._gapA_matrix[i, j - 1] + self.gap_extend
+                )  # Score for extending gap in A
+                left_score_align = (
+                    self._align_matrix[i - 1, j - 1] + self.gap_open
+                )  # Score for opening gap in A
                 self._gapA_matrix[i, j] = max(left_score_A, left_score_align)
                 self._back_A[i, j] = 1 if left_score_A >= left_score_align else 0
-                
-                # Handling gaps in B (seqA gap extension or opening)
-                up_score_B = self._gapB_matrix[i-1, j] + self.gap_extend
-                up_score_align = self._align_matrix[i-1, j] + self.gap_open + self.gap_extend
+
+                # Handling gaps in B (seqB gap extension or opening)
+                up_score_B = (
+                    self._gapB_matrix[i - 1, j] + self.gap_extend
+                )  # Score for extending gap in B
+                up_score_align = (
+                    self._align_matrix[i - 1, j - 1] + self.gap_open
+                )  # Score for opening gap in B
                 self._gapB_matrix[i, j] = max(up_score_B, up_score_align)
                 self._back_B[i, j] = 2 if up_score_B >= up_score_align else 0
-                
+
                 # Choose the best score
-                self._align_matrix[i, j] = max(diagonal_score, self._gapA_matrix[i, j], self._gapB_matrix[i, j])
-                if self._align_matrix[i, j] == diagonal_score:
+                max_score = max(
+                    self._align_matrix[i, j],
+                    self._gapA_matrix[i, j],
+                    self._gapB_matrix[i, j],
+                )
+                if max_score == self._align_matrix[i, j]:
                     self._back[i, j] = 0  # Diagonal move during backtrace
-                elif self._align_matrix[i, j] == self._gapA_matrix[i, j]:
+                elif max_score == self._gapA_matrix[i, j]:
                     self._back[i, j] = 1  # Left (gap in A)
                 else:
                     self._back[i, j] = 2  # Up (gap in B)
@@ -211,7 +239,8 @@ class NeedlemanWunsch:
                         the score and corresponding strings for the alignment of seqA and seqB
         """
         i, j = len(self._seqA), len(self._seqB)
-        while i > 0 or j > 0:
+        print(self._back)
+        while i > 0 and j > 0:
             if self._back[i, j] == 0:  # Diagonal move
                 self.seqA_align = self._seqA[i - 1] + self.seqA_align
                 self.seqB_align = self._seqB[j - 1] + self.seqB_align
@@ -235,6 +264,7 @@ class NeedlemanWunsch:
                     self.seqA_align = self._seqA[i - 1] + self.seqA_align
                     self.seqB_align = "-" + self.seqB_align
                     i -= 1
+            print(self.seqA_align, self.seqB_align, i, j)
 
         return (self.alignment_score, self.seqA_align, self.seqB_align)
 
